@@ -25,10 +25,6 @@ pub fn build(source: String, destination: String) {
     }
 }
 
-fn is_markdown(entry: &DirEntry) -> bool {
-    entry.path().extension().map(|ext| ["md", "markdown"].contains(&ext.to_str().unwrap())).unwrap_or(false)
-}
-
 fn create_post(entry: &DirEntry, source: &String, destination: &String) {
     let mut file   = File::open(entry.path()).unwrap();
     let mut buffer = String::new();
