@@ -8,19 +8,19 @@ pub enum Attribute {
 }
 
 #[derive(Debug)]
-pub struct Post<'a> {
+pub struct Post {
     pub attributes: Vec<Attribute>,
-    pub text: &'a str
+    pub text: String
 }
 
-impl<'a> Post<'a> {
-    pub fn create(buf: &String) -> Post {
+impl Post {
+    pub fn new(buf: String) -> Post {
         let content: Vec<&str> = buf.split("---").skip_while(|s| s.is_empty()).collect();
 
         let post = if content.len() < 2 {
-            Post { attributes: vec![], text: content[0] }
+            Post { attributes: vec![], text: content[0].to_string() }
         } else {
-            Post { attributes: parse_attributes(content[0]), text: content[1] }
+            Post { attributes: parse_attributes(content[0]), text: content[1].to_string() }
         };
 
         post
