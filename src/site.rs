@@ -6,25 +6,44 @@ use walkdir::{ DirEntry, WalkDir };
 use post::Post;
 
 pub fn build(source: String, destination: String) {
-    let walker = WalkDir::new(source).into_iter();
+    let walker = WalkDir::new(&source).into_iter();
 
-    for entry in walker.filter_map(|e| e.ok()).filter(|e| is_markdown(e)) {
-        let mut file   = File::open(entry.path()).unwrap();
-        let mut buffer = String::new();
-        file.read_to_string(&mut buffer);
+    fs::remove_dir_all(&destination);
 
-        let post = Post::create(&buffer);
+    for entry in walker.filter_map(|e| e.ok()) {
+        if let Some(ext) = entry.path().extension() {
+            match ext.to_str().unwrap() {
+                "md" => create_post(&entry, &source, &destination),
+                _ => {
+                    let path     = entry.path().to_str().unwrap().replace(&source, "");
+                    let new_path = Path::new(&destination).join(path);
 
-        let mut rendered = String::new();
-        html::push_html(&mut rendered, Parser::new(post.text));
-
-        fs::create_dir_all(&destination);
-        let out_path = Path::new(&destination).join(entry.file_name()).with_extension("html");
-        file         = File::create(out_path).unwrap();
-        file.write_all(rendered.as_bytes());
+                    fs::copy(entry.path(), new_path);
+                }
+            }
+        }
     }
 }
 
 fn is_markdown(entry: &DirEntry) -> bool {
     entry.path().extension().map(|ext| ["md", "markdown"].contains(&ext.to_str().unwrap())).unwrap_or(false)
+}
+
+fn create_post(entry: &DirEntry, source: &String, destination: &String) {
+    let mut file   = File::open(entry.path()).unwrap();
+    let mut buffer = String::new();
+    file.read_to_string(&mut buffer);
+
+    let post = Post::create(&buffer);
+
+    let mut rendered = String::new();
+    html::push_html(&mut rendered, Parser::new(post.text));
+
+    let path     = entry.path().to_str().unwrap().replace(&source, "");
+    let new_path = Path::new(&destination).join(path).with_extension("html");
+
+    fs::create_dir_all(&new_path.parent().unwrap());
+
+    file = File::create(new_path).unwrap();
+    file.write_all(rendered.as_bytes());
 }
