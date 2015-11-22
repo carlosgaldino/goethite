@@ -70,7 +70,7 @@ fn add_template(entry: &DirEntry, templates: &mut HashMap<String, mustache::Temp
     templates.insert(file_name, template.unwrap());
 }
 
-fn build_post<'a>(entry: &DirEntry, source: &String, destination: &String) -> PPost {
+fn build_post(entry: &DirEntry, source: &String, destination: &String) -> PPost {
     let mut file   = File::open(entry.path()).unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer);
