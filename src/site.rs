@@ -4,9 +4,9 @@ use std::path::{ Path, PathBuf };
 use pulldown_cmark::{ html, Parser };
 use walkdir::{ DirEntry, WalkDir };
 use post::Post;
-use handlebars::{ Handlebars };
 use rustc_serialize::json::{ Json, ToJson };
 use std::collections::HashMap;
+use mustache;
 
 struct PPost {
     post: Post,
@@ -16,7 +16,7 @@ struct PPost {
 pub fn build(source: String, destination: String) {
     let walker = WalkDir::new(&source).into_iter();
     let mut posts = Vec::<PPost>::new();
-    let mut handlebars = Handlebars::new();
+    let mut templates: HashMap<String, mustache::Template> = HashMap::new();
 
     fs::remove_dir_all(&destination);
 
@@ -24,10 +24,11 @@ pub fn build(source: String, destination: String) {
         if let Some(ext) = entry.path().extension() {
             match ext.to_str().unwrap() {
                 "md" => posts.push(build_post(&entry, &source, &destination)),
-                "hbs" => register_template(&entry, &mut handlebars),
+                "mustache" => add_template(&entry, &mut templates),
                 _ => {
                     let path     = entry.path().to_str().unwrap().replace(&source, "");
                     let new_path = Path::new(&destination).join(path);
+                    fs::create_dir_all(new_path.parent().unwrap());
 
                     fs::copy(entry.path(), new_path);
                 }
@@ -36,8 +37,15 @@ pub fn build(source: String, destination: String) {
     }
 
     for post in posts {
-        create_post(&post, &mut handlebars);
+        create_post(&post, &templates);
     }
+}
+
+fn add_template(entry: &DirEntry, templates: &mut HashMap<String, mustache::Template>) {
+    let file_name = entry.file_name().to_str().unwrap().replace(".mustache", "").to_string();
+    let template = mustache::compile_path(entry.path());
+
+    templates.insert(file_name, template.unwrap());
 }
 
 fn build_post<'a>(entry: &DirEntry, source: &String, destination: &String) -> PPost {
@@ -51,32 +59,18 @@ fn build_post<'a>(entry: &DirEntry, source: &String, destination: &String) -> PP
     PPost { post: Post::new(buffer), path: new_path }
 }
 
-fn register_template(entry: &DirEntry, handlebars: &mut Handlebars) {
-    let mut file   = File::open(entry.path()).unwrap();
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer);
-
-    let template_name = Path::new(entry.file_name().to_str().unwrap()).file_stem().unwrap();
-
-    handlebars.register_template_string(template_name.to_str().unwrap(), buffer);
-}
-
-fn create_post(post: &PPost, handlebars: &mut Handlebars) {
+fn create_post(post: &PPost, templates: &HashMap<String, mustache::Template>) {
     let mut rendered = String::new();
     html::push_html(&mut rendered, Parser::new(&post.post.text));
 
-    let mut data: HashMap<String, Json> = HashMap::new();
-    data.insert("title".to_string(), "My Title".to_json());
-    data.insert("tagline".to_string(), "My Tagline".to_json());
-
-    handlebars.register_template_string("content", rendered);
-
-    rendered = handlebars.render("page", &data).unwrap();
+    let data = mustache::MapBuilder::new()
+        .insert_str("content", rendered)
+        .insert_str("title", "Yo title")
+        .insert_str("tagline", "Yo tagline")
+        .build();
 
     fs::create_dir_all(post.path.parent().unwrap());
 
     let mut file = File::create(&post.path).unwrap();
-    file.write_all(rendered.as_bytes());
-
-    handlebars.unregister_template("content");
+    templates.get("page").unwrap().render_data(&mut file, &data);
 }
