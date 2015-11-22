@@ -4,14 +4,8 @@ use std::path::{ Path, PathBuf };
 use pulldown_cmark::{ html, Parser };
 use walkdir::{ DirEntry, WalkDir };
 use post::Post;
-use rustc_serialize::json::{ Json, ToJson };
 use std::collections::HashMap;
 use mustache;
-
-struct PPost {
-    post: Post,
-    path: PathBuf
-}
 
 struct Page {
     content: String,
@@ -20,7 +14,7 @@ struct Page {
 
 pub fn build(source: String, destination: String) {
     let walker = WalkDir::new(&source).into_iter();
-    let mut posts = Vec::<PPost>::new();
+    let mut posts = Vec::<Post>::new();
     let mut templates: HashMap<String, mustache::Template> = HashMap::new();
     let mut pages: Vec<Page> = Vec::new();
 
@@ -70,31 +64,35 @@ fn add_template(entry: &DirEntry, templates: &mut HashMap<String, mustache::Temp
     templates.insert(file_name, template.unwrap());
 }
 
-fn build_post(entry: &DirEntry, source: &String, destination: &String) -> PPost {
+fn build_post(entry: &DirEntry, source: &String, destination: &String) -> Post {
     let mut file   = File::open(entry.path()).unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer);
 
-    let path     = entry.path().to_str().unwrap().replace(&source, "");
-    let new_path = Path::new(&destination).join(path).with_extension("html");
+    let content: Vec<&str> = buffer.split("---").skip_while(|s| s.is_empty()).collect();
 
-    PPost { post: Post::new(buffer), path: new_path }
+    let rendered_content = render_markdown(content[1]);
+
+    let path = entry.path().to_str().unwrap().replace(&source, "");
+    let path = Path::new(&destination).join(path).with_extension("html");
+
+    let post = Post::new(content[0].to_string(), rendered_content, path);
+
+    post
 }
 
-fn create_post(post: &PPost, templates: &HashMap<String, mustache::Template>) {
+fn render_markdown(text: &str) -> String {
     let mut rendered = String::new();
-    html::push_html(&mut rendered, Parser::new(&post.post.text));
+    html::push_html(&mut rendered, Parser::new(text));
 
-    let data = mustache::MapBuilder::new()
-        .insert_str("content", rendered)
-        .insert_str("title", "Yo title")
-        .insert_str("tagline", "Yo tagline")
-        .build();
+    rendered
+}
 
+fn create_post(post: &Post, templates: &HashMap<String, mustache::Template>) {
     fs::create_dir_all(post.path.parent().unwrap());
 
     let mut file = File::create(&post.path).unwrap();
-    templates.get("page").unwrap().render_data(&mut file, &data);
+    templates.get("page").unwrap().render(&mut file, &post);
 }
 
 fn create_page(page: &Page, templates: &HashMap<String, mustache::Template>) {
