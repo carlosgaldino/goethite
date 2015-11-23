@@ -5,12 +5,18 @@ use std::io::prelude::*;
 use std::fs::{ self, File };
 use site::Site;
 
-pub fn read_content(entry: &DirEntry) -> String {
+pub fn read_content(entry: &DirEntry) -> (String, String) {
     let mut file   = File::open(entry.path()).unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer);
 
-    buffer
+    let content: Vec<&str> = buffer.split("---").skip_while(|s| s.is_empty()).collect();
+
+    if content.len() < 2 {
+        panic!("Front Matter not found for {:?}", &entry.path());
+    }
+
+    (content[0].to_string(), content[1].to_string())
 }
 
 pub fn new_path(path: &Path, site: &Site) -> PathBuf {
@@ -26,9 +32,9 @@ pub fn create_output_file(path: &PathBuf) -> File {
     File::create(path).unwrap()
 }
 
-pub fn render_markdown(text: &str) -> String {
+pub fn render_markdown(text: String) -> String {
     let mut rendered = String::new();
-    html::push_html(&mut rendered, Parser::new(text));
+    html::push_html(&mut rendered, Parser::new(&text));
 
     rendered
 }

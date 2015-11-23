@@ -1,5 +1,4 @@
 pub mod site;
-mod post;
 mod page;
 mod utils;
 
