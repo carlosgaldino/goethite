@@ -13,6 +13,7 @@ type Templates = HashMap<String, mustache::Template>;
 #[derive(RustcEncodable)]
 pub struct Config {
     pub author: String,
+    pub name:   String,
 }
 
 #[derive(RustcEncodable)]
@@ -24,6 +25,12 @@ struct Site {
     pages: Vec<Page>,
 }
 
+#[derive(RustcEncodable)]
+struct Context<'a> {
+    site: &'a Site,
+    post: &'a Post
+}
+
 impl Site {
     fn new(source: String, destination: String, config: Config) -> Site {
         Site { source: source, destination: destination, config: config, posts: Vec::new(), pages: Vec::new() }
@@ -31,7 +38,7 @@ impl Site {
 }
 
 pub fn build(source: String, destination: String) {
-    let site = Site::new(source, destination, Config { author: String::from("Carlos Galdino") });
+    let site = Site::new(source, destination, Config { author: String::from("Carlos Galdino"), name: String::from("cg") });
 
     let walker                   = WalkDir::new(&site.source).into_iter();
     let mut posts: Vec<Post>     = Vec::new();
@@ -114,7 +121,9 @@ fn create_post(post: &Post, site: &Site, templates: &Templates) {
     fs::create_dir_all(post.path.parent().unwrap());
 
     let mut file = File::create(&post.path).unwrap();
-    templates.get("page").unwrap().render(&mut file, &post);
+
+    let context = Context { site: site, post: post };
+    templates.get("post").unwrap().render(&mut file, &context);
 }
 
 fn create_page(page: &Page, site: &Site, templates: &Templates) {
