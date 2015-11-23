@@ -43,9 +43,9 @@ pub fn build(source: String, destination: String) {
     for entry in walker.filter_map(|e| e.ok()) {
         if let Some(ext) = entry.path().extension() {
             match ext.to_str().unwrap() {
-                "md" => posts.push(build_post(&entry, &site)),
+                "md"       => posts.push(build_post(&entry, &site)),
                 "mustache" => add_template(&entry, &mut templates),
-                "html" => pages.push(build_page(&entry, &site)),
+                "html"     => pages.push(build_page(&entry, &site)),
                 _ => {
                     let path     = entry.path().to_str().unwrap().replace(&site.source, "");
                     let new_path = Path::new(&site.destination).join(path);

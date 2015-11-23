@@ -1,9 +1,9 @@
 use toml;
-use rustc_serialize::{ Encodable, Encoder, Decodable };
+use rustc_serialize::{ Encodable, Encoder };
 use std::path::{ PathBuf };
 use site;
 
-#[derive(RustcDecodable, RustcEncodable, Debug)]
+#[derive(RustcEncodable, Debug)]
 struct Attributes {
     title:  String,
     author: String,
