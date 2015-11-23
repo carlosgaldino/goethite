@@ -1,5 +1,6 @@
 pub mod site;
 mod post;
+mod page;
 
 extern crate pulldown_cmark;
 extern crate walkdir;

@@ -1,34 +1,50 @@
 use std::io::prelude::*;
 use std::fs::{ self, File };
-use std::path::{ Path, PathBuf };
+use std::path::{ Path };
 use pulldown_cmark::{ html, Parser };
 use walkdir::{ DirEntry, WalkDir };
 use post::Post;
+use page::Page;
 use std::collections::HashMap;
 use mustache;
 
-struct Page {
-    content: String,
-    path: PathBuf,
+pub struct Config {
+    pub author: String,
+}
+
+struct Site {
+    source: String,
+    destination: String,
+    config: Config,
+    posts: Vec<Post>,
+    pages: Vec<Page>,
+}
+
+impl Site {
+    fn new(source: String, destination: String, config: Config) -> Site {
+        Site { source: source, destination: destination, config: config, posts: Vec::new(), pages: Vec::new() }
+    }
 }
 
 pub fn build(source: String, destination: String) {
-    let walker = WalkDir::new(&source).into_iter();
+    let site = Site::new(source, destination, Config { author: String::from("Carlos Galdino") });
+
+    let walker = WalkDir::new(&site.source).into_iter();
     let mut posts = Vec::<Post>::new();
     let mut templates: HashMap<String, mustache::Template> = HashMap::new();
     let mut pages: Vec<Page> = Vec::new();
 
-    fs::remove_dir_all(&destination);
+    fs::remove_dir_all(&site.destination);
 
     for entry in walker.filter_map(|e| e.ok()) {
         if let Some(ext) = entry.path().extension() {
             match ext.to_str().unwrap() {
-                "md" => posts.push(build_post(&entry, &source, &destination)),
+                "md" => posts.push(build_post(&entry, &site)),
                 "mustache" => add_template(&entry, &mut templates),
-                "html" => pages.push(build_page(&entry, &source, &destination)),
+                "html" => pages.push(build_page(&entry, &site)),
                 _ => {
-                    let path     = entry.path().to_str().unwrap().replace(&source, "");
-                    let new_path = Path::new(&destination).join(path);
+                    let path     = entry.path().to_str().unwrap().replace(&site.source, "");
+                    let new_path = Path::new(&site.destination).join(path);
                     fs::create_dir_all(new_path.parent().unwrap());
 
                     fs::copy(entry.path(), new_path);
@@ -46,13 +62,13 @@ pub fn build(source: String, destination: String) {
     }
 }
 
-fn build_page(entry: &DirEntry, source: &String, destination: &String) -> Page {
+fn build_page(entry: &DirEntry, site: &Site) -> Page {
     let mut file   = File::open(entry.path()).unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer);
 
-    let path     = entry.path().to_str().unwrap().replace(&source, "");
-    let new_path = Path::new(&destination).join(path).with_extension("html");
+    let path     = entry.path().to_str().unwrap().replace(&site.source, "");
+    let new_path = Path::new(&site.destination).join(path).with_extension("html");
 
     Page { content: buffer, path: new_path }
 }
@@ -64,7 +80,7 @@ fn add_template(entry: &DirEntry, templates: &mut HashMap<String, mustache::Temp
     templates.insert(file_name, template.unwrap());
 }
 
-fn build_post(entry: &DirEntry, source: &String, destination: &String) -> Post {
+fn build_post(entry: &DirEntry, site: &Site) -> Post {
     let mut file   = File::open(entry.path()).unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer);
@@ -73,10 +89,10 @@ fn build_post(entry: &DirEntry, source: &String, destination: &String) -> Post {
 
     let rendered_content = render_markdown(content[1]);
 
-    let path = entry.path().to_str().unwrap().replace(&source, "");
-    let path = Path::new(&destination).join(path).with_extension("html");
+    let path = entry.path().to_str().unwrap().replace(&site.source, "");
+    let path = Path::new(&site.destination).join(path).with_extension("html");
 
-    let post = Post::new(content[0].to_string(), rendered_content, path);
+    let post = Post::new(content[0].to_string(), rendered_content, path, &site.config);
 
     post
 }
