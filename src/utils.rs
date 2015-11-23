@@ -22,14 +22,14 @@ pub fn read_content(entry: &DirEntry) -> (String, String) {
 pub fn new_path(path: &Path, site: &Site) -> PathBuf {
     let path = path.to_str().unwrap().replace(&site.source, "");
 
-    Path::new(&site.destination).join(path).with_extension("html")
+    Path::new(&site.destination).join(path)
 }
 
 // TODO: Not use `unwrap`
 pub fn create_output_file(path: &PathBuf) -> File {
     fs::create_dir_all(path.parent().unwrap());
 
-    File::create(path).unwrap()
+    File::create(path.with_extension("html")).unwrap()
 }
 
 pub fn render_markdown(text: String) -> String {
@@ -40,8 +40,7 @@ pub fn render_markdown(text: String) -> String {
 }
 
 pub fn copy_file(entry: &DirEntry, site: &Site) {
-    let path     = entry.path().to_str().unwrap().replace(&site.source, "");
-    let new_path = Path::new(&site.destination).join(path);
+    let new_path = new_path(&entry.path(), &site);
 
     fs::create_dir_all(new_path.parent().unwrap());
     fs::copy(entry.path(), new_path);
