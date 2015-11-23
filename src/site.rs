@@ -8,10 +8,14 @@ use page::Page;
 use std::collections::HashMap;
 use mustache;
 
+type Templates = HashMap<String, mustache::Template>;
+
+#[derive(RustcEncodable)]
 pub struct Config {
     pub author: String,
 }
 
+#[derive(RustcEncodable)]
 struct Site {
     source: String,
     destination: String,
@@ -29,10 +33,10 @@ impl Site {
 pub fn build(source: String, destination: String) {
     let site = Site::new(source, destination, Config { author: String::from("Carlos Galdino") });
 
-    let walker = WalkDir::new(&site.source).into_iter();
-    let mut posts = Vec::<Post>::new();
-    let mut templates: HashMap<String, mustache::Template> = HashMap::new();
-    let mut pages: Vec<Page> = Vec::new();
+    let walker                   = WalkDir::new(&site.source).into_iter();
+    let mut posts: Vec<Post>     = Vec::new();
+    let mut templates: Templates = HashMap::new();
+    let mut pages: Vec<Page>     = Vec::new();
 
     fs::remove_dir_all(&site.destination);
 
@@ -53,12 +57,14 @@ pub fn build(source: String, destination: String) {
         }
     }
 
-    for post in posts {
-        create_post(&post, &templates);
+    let site = Site { posts: posts, pages: pages, .. site };
+
+    for post in &site.posts {
+        create_post(&post, &site, &templates);
     }
 
-    for page in pages {
-        create_page(&page, &templates);
+    for page in &site.pages {
+        create_page(&page, &site, &templates);
     }
 }
 
@@ -73,7 +79,7 @@ fn build_page(entry: &DirEntry, site: &Site) -> Page {
     Page { content: buffer, path: new_path }
 }
 
-fn add_template(entry: &DirEntry, templates: &mut HashMap<String, mustache::Template>) {
+fn add_template(entry: &DirEntry, templates: &mut Templates) {
     let file_name = entry.file_name().to_str().unwrap().replace(".mustache", "").to_string();
     let template = mustache::compile_path(entry.path());
 
@@ -104,22 +110,17 @@ fn render_markdown(text: &str) -> String {
     rendered
 }
 
-fn create_post(post: &Post, templates: &HashMap<String, mustache::Template>) {
+fn create_post(post: &Post, site: &Site, templates: &Templates) {
     fs::create_dir_all(post.path.parent().unwrap());
 
     let mut file = File::create(&post.path).unwrap();
     templates.get("page").unwrap().render(&mut file, &post);
 }
 
-fn create_page(page: &Page, templates: &HashMap<String, mustache::Template>) {
-    let page_data = mustache::MapBuilder::new()
-        .insert_str("title", "Page title")
-        .insert_str("tagline", "Page tagline")
-        .build();
-
+fn create_page(page: &Page, site: &Site, templates: &Templates) {
     let page_template = mustache::compile_str(&page.content);
     let mut rendered: Vec<u8> = Vec::new();
-    page_template.render_data(&mut rendered, &page_data);
+    page_template.render(&mut rendered, &site);
 
     let data = mustache::MapBuilder::new()
         .insert_str("content", String::from_utf8(rendered).unwrap())
