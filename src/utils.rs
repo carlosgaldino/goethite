@@ -38,3 +38,11 @@ pub fn render_markdown(text: String) -> String {
 
     rendered
 }
+
+pub fn copy_file(entry: &DirEntry, site: &Site) {
+    let path     = entry.path().to_str().unwrap().replace(&site.source, "");
+    let new_path = Path::new(&site.destination).join(path);
+
+    fs::create_dir_all(new_path.parent().unwrap());
+    fs::copy(entry.path(), new_path);
+}

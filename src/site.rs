@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::{ Path };
 use walkdir::{ DirEntry, WalkDir };
 use page::Page;
 use std::collections::HashMap;
@@ -50,13 +49,7 @@ pub fn build(source: String, destination: String) {
                 "md" | "markdown" => pages.push(build_from_markdown(&entry, &site)),
                 "html"            => pages.push(build_from_html(&entry, &site)),
                 "mustache"        => add_template(&entry, &mut templates),
-                _ => {
-                    let path     = entry.path().to_str().unwrap().replace(&site.source, "");
-                    let new_path = Path::new(&site.destination).join(path);
-                    fs::create_dir_all(new_path.parent().unwrap());
-
-                    fs::copy(entry.path(), new_path);
-                }
+                _                 => utils::copy_file(&entry, &site),
             }
         }
     }
