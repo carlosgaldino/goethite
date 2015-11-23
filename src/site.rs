@@ -1,12 +1,11 @@
-use std::io::prelude::*;
-use std::fs::{ self, File };
+use std::fs;
 use std::path::{ Path };
-use pulldown_cmark::{ html, Parser };
 use walkdir::{ DirEntry, WalkDir };
 use post::Post;
 use page::Page;
 use std::collections::HashMap;
 use mustache;
+use utils;
 
 type Templates = HashMap<String, mustache::Template>;
 
@@ -17,18 +16,18 @@ pub struct Config {
 }
 
 #[derive(RustcEncodable)]
-struct Site {
-    source: String,
-    destination: String,
-    config: Config,
-    posts: Vec<Post>,
-    pages: Vec<Page>,
-}
-
-#[derive(RustcEncodable)]
 struct Context<'a> {
     site: &'a Site,
     post: &'a Post
+}
+
+#[derive(RustcEncodable)]
+pub struct Site {
+    pub source: String,
+    pub destination: String,
+    config: Config,
+    posts: Vec<Post>,
+    pages: Vec<Page>,
 }
 
 impl Site {
@@ -76,14 +75,20 @@ pub fn build(source: String, destination: String) {
 }
 
 fn build_page(entry: &DirEntry, site: &Site) -> Page {
-    let mut file   = File::open(entry.path()).unwrap();
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer);
+    let content = utils::read_content(&entry);
 
-    let path     = entry.path().to_str().unwrap().replace(&site.source, "");
-    let new_path = Path::new(&site.destination).join(path).with_extension("html");
+    Page { content: content, path: utils::new_path(&entry.path(), &site) }
+}
 
-    Page { content: buffer, path: new_path }
+fn build_post(entry: &DirEntry, site: &Site) -> Post {
+    let content = utils::read_content(&entry);
+
+    let content: Vec<&str> = content.split("---").skip_while(|s| s.is_empty()).collect();
+    let rendered_content   = utils::render_markdown(content[1]);
+    let path               = utils::new_path(&entry.path(), &site);
+    let post               = Post::new(content[0].to_string(), rendered_content, path, &site.config);
+
+    post
 }
 
 fn add_template(entry: &DirEntry, templates: &mut Templates) {
@@ -93,41 +98,15 @@ fn add_template(entry: &DirEntry, templates: &mut Templates) {
     templates.insert(file_name, template.unwrap());
 }
 
-fn build_post(entry: &DirEntry, site: &Site) -> Post {
-    let mut file   = File::open(entry.path()).unwrap();
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer);
-
-    let content: Vec<&str> = buffer.split("---").skip_while(|s| s.is_empty()).collect();
-
-    let rendered_content = render_markdown(content[1]);
-
-    let path = entry.path().to_str().unwrap().replace(&site.source, "");
-    let path = Path::new(&site.destination).join(path).with_extension("html");
-
-    let post = Post::new(content[0].to_string(), rendered_content, path, &site.config);
-
-    post
-}
-
-fn render_markdown(text: &str) -> String {
-    let mut rendered = String::new();
-    html::push_html(&mut rendered, Parser::new(text));
-
-    rendered
-}
-
 fn create_post(post: &Post, site: &Site, templates: &Templates) {
-    fs::create_dir_all(post.path.parent().unwrap());
+    let mut file = utils::create_output_file(&post.path);
+    let context  = Context { site: site, post: post };
 
-    let mut file = File::create(&post.path).unwrap();
-
-    let context = Context { site: site, post: post };
     templates.get("post").unwrap().render(&mut file, &context);
 }
 
 fn create_page(page: &Page, site: &Site, templates: &Templates) {
-    let page_template = mustache::compile_str(&page.content);
+    let page_template         = mustache::compile_str(&page.content);
     let mut rendered: Vec<u8> = Vec::new();
     page_template.render(&mut rendered, &site);
 
@@ -137,8 +116,6 @@ fn create_page(page: &Page, site: &Site, templates: &Templates) {
         .insert_str("tagline", "Yo tagline")
         .build();
 
-    fs::create_dir_all(page.path.parent().unwrap());
-
-    let mut file = File::create(&page.path).unwrap();
+    let mut file = utils::create_output_file(&page.path);
     templates.get("page").unwrap().render_data(&mut file, &data);
 }
