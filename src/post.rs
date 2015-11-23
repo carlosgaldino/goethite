@@ -4,7 +4,7 @@ use std::path::{ PathBuf };
 use site;
 
 #[derive(RustcDecodable, RustcEncodable, Debug)]
-pub struct Attributes {
+struct Attributes {
     title:  String,
     author: String,
     layout: String
@@ -12,9 +12,9 @@ pub struct Attributes {
 
 #[derive(Debug, RustcEncodable)]
 pub struct Post {
-    pub attributes: Attributes,
-    pub content:    String,
-    pub path:       PathBuf,
+    attributes: Attributes,
+    content:    String,
+    pub path:   PathBuf,
 }
 
 impl Post {
