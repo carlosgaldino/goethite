@@ -9,8 +9,10 @@ type Templates = HashMap<String, mustache::Template>;
 
 #[derive(RustcEncodable)]
 pub struct Config {
-    pub author: String,
-    pub name:   String,
+    pub author:      String,
+    pub name:        String,
+    pub source:      String,
+    pub destination: String,
 }
 
 #[derive(RustcEncodable)]
@@ -21,35 +23,34 @@ struct Context<'a> {
 
 #[derive(RustcEncodable)]
 pub struct Site {
-    pub source: String,
-    pub destination: String,
-    config: Config,
+    pub config: Config,
     pages: Vec<Page>,
     posts: Vec<Page>,
 }
 
 impl Site {
-    fn new(source: String, destination: String, config: Config) -> Site {
-        Site { source: source, destination: destination, config: config, pages: Vec::new(), posts: Vec::new() }
+    fn new(config: Config) -> Site {
+        Site { config: config, pages: Vec::new(), posts: Vec::new() }
     }
 }
 
 pub fn build(source: String, destination: String) {
-    let site = Site::new(source, destination, Config { author: String::from("Carlos Galdino"), name: String::from("cg") });
+    let site = Site::new(Config { author: String::from("Carlos Galdino"), name: String::from("cg"), source: source.clone(), destination: destination.clone() });
 
-    let walker                   = WalkDir::new(&site.source).into_iter();
+    let walker                   = WalkDir::new(source).into_iter();
     let mut templates: Templates = HashMap::new();
     let mut pages: Vec<Page>     = Vec::new();
 
-    fs::remove_dir_all(&site.destination);
+    fs::remove_dir_all(destination);
 
     for entry in walker.filter_map(|e| e.ok()) {
         if let Some(ext) = entry.path().extension() {
+            // TODO: use `extract_markup`
             match ext.to_str().unwrap() {
-                "md" | "markdown" => pages.push(build_from_markdown(&entry, &site)),
-                "html"            => pages.push(build_from_html(&entry, &site)),
+                "md" | "markdown" => pages.push(build_from_markdown(&entry, &site.config)),
+                "html"            => pages.push(build_from_html(&entry, &site.config)),
                 "mustache"        => add_template(&entry, &mut templates),
-                _                 => utils::copy_file(&entry, &site),
+                _                 => utils::copy_file(&entry, &site.config),
             }
         }
     }
@@ -77,19 +78,17 @@ fn render(page: &Page, site: &Site, templates: &Templates) {
     }
 }
 
-fn build_from_html(entry: &DirEntry, site: &Site) -> Page {
+fn build_from_html(entry: &DirEntry, config: &Config) -> Page {
     let (attrs, content)   = utils::read_content(&entry);
-    let path               = utils::new_path(&entry.path(), &site);
 
-    Page::new(attrs, content, path, &site.config)
+    Page::new(attrs, content, entry.path(), &config)
 }
 
-fn build_from_markdown(entry: &DirEntry, site: &Site) -> Page {
+fn build_from_markdown(entry: &DirEntry, config: &Config) -> Page {
     let (attrs, content)   = utils::read_content(&entry);
     let rendered_content   = utils::render_markdown(content);
-    let path               = utils::new_path(&entry.path(), &site);
 
-    Page::new(attrs, rendered_content, path, &site.config)
+    Page::new(attrs, rendered_content, entry.path(), &config)
 }
 
 fn render_markdown(page: &Page, site: &Site, templates: &Templates) {

@@ -7,6 +7,11 @@ authors = ["Carlos Galdino <carloshsgaldino@gmail.com>"]
 pulldown-cmark = "0.0.3"
 walkdir = "0.1.5"
 docopt = "0.6.76"
-rustc-serialize = "0.3.16"
+rustc-serialize = "0.3"
 toml = "0.1.23"
 mustache = "0.6.3"
+regex = "0.1"
+
+[dependencies.chrono]
+git = "https://github.com/lifthrasiir/rust-chrono"
+features = ["rustc-serialize"]
