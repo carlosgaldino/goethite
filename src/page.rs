@@ -10,12 +10,28 @@ pub struct Attributes {
     pub layout: String,
 }
 
+#[derive(Clone, Debug)]
+pub enum Markup {
+    Markdown,
+    HTML
+}
+
+impl Encodable for Markup {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        match *self {
+            Markup::Markdown => try!(s.emit_str("markdown")),
+            Markup::HTML     => try!(s.emit_str("html")),
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, RustcEncodable, Clone)]
 pub struct Page {
     pub attributes: Attributes,
     pub content:    String,
     pub path:       PathBuf,
-    pub markup:     String,
+    pub markup:     Markup,
 }
 
 impl Page {
@@ -40,8 +56,14 @@ impl Page {
     }
 }
 
-fn extract_markup(path: PathBuf) -> String {
-    String::from(path.extension().unwrap().to_str().unwrap())
+fn extract_markup(path: PathBuf) -> Markup {
+    let ext = path.extension().unwrap().to_str().unwrap();
+
+    match ext {
+        "md" | "markdown" => Markup::Markdown,
+        "html"            => Markup::HTML,
+        _                 => panic!("Unknown markup"),
+    }
 }
 
 fn build_attrs(attrs: TomlAttributes, config: &site::Config) -> Attributes {

@@ -1,6 +1,6 @@
 use std::fs;
 use walkdir::{ DirEntry, WalkDir };
-use page::Page;
+use page::{ Page, Markup };
 use std::collections::HashMap;
 use mustache;
 use utils;
@@ -71,9 +71,9 @@ fn add_template(entry: &DirEntry, templates: &mut Templates) {
 }
 
 fn render(page: &Page, site: &Site, templates: &Templates) {
-    match &*page.markup {
-        "markdown" | "md" => render_markdown(&page, &site, &templates),
-        _ => render_html(&page, &site, &templates),
+    match page.markup {
+        Markup::Markdown => render_markdown(&page, &site, &templates),
+        Markup::HTML     => render_html(&page, &site, &templates),
     }
 }
 
