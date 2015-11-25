@@ -75,14 +75,15 @@ fn extract_markup(path: PathBuf) -> Markup {
 }
 
 fn build_attrs(attrs: TomlAttributes, path: &Path, config: &Config) -> Attributes {
-    let layout = attrs.layout.unwrap_or(String::from("page"));
-    let title  = attrs.title.unwrap_or(path.file_stem().unwrap().to_str().unwrap().to_string());
-    let date   = utils::parse_date(attrs.date);
+    let file_stem = path.file_stem().unwrap().to_str().unwrap().to_string();
+    let layout    = attrs.layout.unwrap_or(String::from("page"));
+    let title     = attrs.title.unwrap_or(file_stem.clone());
+    let date      = utils::parse_date(attrs.date);
 
     let permalink = if layout == "post" {
         format!("{}/{}.html", date.format("%Y/%m/%d"), utils::slugify(&title))
     } else {
-        format!("{}.html", utils::slugify(&title))
+        format!("{}.html", file_stem)
     };
 
     Attributes {
