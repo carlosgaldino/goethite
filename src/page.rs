@@ -76,7 +76,7 @@ fn extract_markup(path: PathBuf) -> Markup {
 
 fn build_attrs(attrs: TomlAttributes, path: &Path, config: &Config) -> Attributes {
     let layout = attrs.layout.unwrap_or(String::from("page"));
-    let title  = attrs.title.unwrap_or(path.file_stem().unwrap().to_str().unwrap().to_uppercase());
+    let title  = attrs.title.unwrap_or(path.file_stem().unwrap().to_str().unwrap().to_string());
     let date   = utils::parse_date(attrs.date);
 
     let permalink = if layout == "post" {
