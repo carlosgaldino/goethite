@@ -67,7 +67,7 @@ pub fn build(source: String, destination: String) {
 
 fn add_template(entry: &DirEntry, templates: &mut Templates) {
     let file_name = entry.file_name().to_str().unwrap().replace(".mustache", "").to_string();
-    let template = mustache::compile_path(entry.path());
+    let template  = mustache::compile_path(entry.path());
 
     templates.insert(file_name, template.unwrap());
 }
@@ -80,14 +80,14 @@ fn render(page: &Page, site: &Site, templates: &Templates) {
 }
 
 fn build_from_html(entry: &DirEntry, config: &Config) -> Page {
-    let (attrs, content)   = utils::read_content(&entry);
+    let (attrs, content) = utils::read_content(&entry);
 
     Page::new(attrs, content, entry.path(), &config)
 }
 
 fn build_from_markdown(entry: &DirEntry, config: &Config) -> Page {
-    let (attrs, content)   = utils::read_content(&entry);
-    let rendered_content   = utils::render_markdown(content);
+    let (attrs, content) = utils::read_content(&entry);
+    let rendered_content = utils::render_markdown(content);
 
     Page::new(attrs, rendered_content, entry.path(), &config)
 }
