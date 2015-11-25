@@ -48,11 +48,11 @@ impl Page {
         };
 
         let attributes = build_attrs(attrs, path, config);
-        let path       = utils::new_path(&attributes.permalink, config);
+        let new_path   = utils::new_path(&attributes.permalink, config);
 
         Page {
             content:    content,
-            path:       path.clone(),
+            path:       new_path,
             attributes: attributes,
             markup:     extract_markup(path),
         }
@@ -64,7 +64,7 @@ impl Page {
 }
 
 // TODO: move to utils and return Option<Markup>
-fn extract_markup(path: PathBuf) -> Markup {
+fn extract_markup(path: &Path) -> Markup {
     let ext = path.extension().unwrap().to_str().unwrap();
 
     match ext {
