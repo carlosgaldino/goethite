@@ -11,7 +11,7 @@ pub struct Attributes {
     author:     String,
     pub layout: String,
     permalink:  String,
-    date:       NaiveDate,
+    pub date:   NaiveDate,
 }
 
 #[derive(Clone, Debug)]

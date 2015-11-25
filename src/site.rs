@@ -55,7 +55,8 @@ pub fn build(source: String, destination: String) {
         }
     }
 
-    let posts: Vec<Page> = pages.clone().into_iter().filter(|p| p.is_post()).collect();
+    let mut posts: Vec<Page> = pages.clone().into_iter().filter(|p| p.is_post()).collect();
+    posts.sort_by(|a, b| b.attributes.date.cmp(&a.attributes.date));
 
     let site = Site { pages: pages, posts: posts, .. site };
 
