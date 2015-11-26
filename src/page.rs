@@ -11,6 +11,7 @@ pub struct Attributes {
     author:     String,
     pub layout: String,
     permalink:  String,
+    prefix:     Option<String>,
     pub date:   NaiveDate,
 }
 
@@ -32,7 +33,7 @@ impl Page {
         };
 
         let attributes = build_attrs(attrs, path, config);
-        let new_path   = utils::new_path(&attributes.permalink, config);
+        let new_path   = utils::new_path(&attributes.permalink, attributes.prefix.clone(), config);
         let markup     = utils::extract_markup(path).expect("Unknown markup");
 
         Page {
@@ -54,10 +55,13 @@ fn build_attrs(attrs: TomlAttributes, path: &Path, config: &Config) -> Attribute
     let title     = attrs.title.unwrap_or(file_stem.clone());
     let date      = utils::parse_date(attrs.date);
 
-    let permalink = if layout == "post" {
-        format!("{}/{}.html", date.format("%Y/%m/%d"), utils::slugify(&title))
+    let (prefix, permalink) = if layout == "post" {
+        let prefix    = date.format("%Y/%m/%d");
+        let permalink = format!("{}/{}.html", prefix, utils::slugify(&file_stem));
+
+        (Some(prefix.to_string()), permalink)
     } else {
-        format!("{}.html", file_stem)
+        (None, format!("{}.html", file_stem))
     };
 
     Attributes {
@@ -66,6 +70,7 @@ fn build_attrs(attrs: TomlAttributes, path: &Path, config: &Config) -> Attribute
         title:     title,
         date:      date,
         permalink: permalink,
+        prefix:    prefix,
     }
 }
 

@@ -7,6 +7,7 @@ use site::Config;
 use regex::Regex;
 use chrono::{ NaiveDate, UTC };
 use rustc_serialize::{ Encodable, Encoder };
+use std::ffi::OsStr;
 
 #[derive(Clone, Debug)]
 pub enum Markup {
@@ -40,10 +41,36 @@ pub fn read_content(entry: &DirEntry) -> (String, String) {
     (content[0].to_string(), content[1].to_string())
 }
 
-pub fn new_path(path: &str, config: &Config) -> PathBuf {
-    let path = path.replace(&config.source, "");
+// TODO: remove this and use Path::relative_from when stable
+fn normalize_path_str(s: &String) -> String {
+    let s = s.to_owned();
 
-    Path::new(&config.destination).join(path)
+    if s.ends_with("/") {
+        s
+    } else {
+        s + "/"
+    }
+}
+
+pub fn new_path<P: AsRef<Path>>(path: &P, prefix: Option<String>, config: &Config) -> PathBuf {
+    let path              = path.as_ref();
+    let file_name         = path.file_name().unwrap_or(OsStr::new(""));
+    let normalized_source = normalize_path_str(&config.source);
+    let rp                = path.to_str().unwrap().replace(&normalized_source, "");
+    let base              = PathBuf::from(&config.destination);
+
+    let relativized_path = if path.starts_with(normalized_source) {
+        Path::new(&rp)
+    } else {
+        path
+    };
+
+    let new_path = match prefix {
+        Some(p) => base.join(p).join(file_name),
+        None    => base.join(relativized_path)
+    };
+
+    new_path
 }
 
 // TODO: Not use `unwrap`
@@ -61,7 +88,7 @@ pub fn render_markdown(text: String) -> String {
 }
 
 pub fn copy_file(entry: &DirEntry, config: &Config) {
-    let new_path = new_path(entry.path().to_str().unwrap(), &config);
+    let new_path = new_path(&entry.path(), None, &config);
 
     fs::create_dir_all(new_path.parent().unwrap());
     fs::copy(entry.path(), new_path);
