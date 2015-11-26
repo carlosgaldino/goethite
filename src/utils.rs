@@ -6,6 +6,25 @@ use std::fs::{ self, File };
 use site::Config;
 use regex::Regex;
 use chrono::{ NaiveDate, UTC };
+use rustc_serialize::{ Encodable, Encoder };
+
+#[derive(Clone, Debug)]
+pub enum Markup {
+    Markdown,
+    HTML,
+    Mustache,
+}
+
+impl Encodable for Markup {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        match *self {
+            Markup::Markdown => try!(s.emit_str("markdown")),
+            Markup::HTML     => try!(s.emit_str("html")),
+            Markup::Mustache => try!(s.emit_str("mustache")),
+        }
+        Ok(())
+    }
+}
 
 pub fn read_content(entry: &DirEntry) -> (String, String) {
     let mut file   = File::open(entry.path()).unwrap();
@@ -63,5 +82,17 @@ pub fn parse_date(str: Option<String>) -> NaiveDate {
             Err(_) => panic!("Invalid date format"),
         },
         None => UTC::today().naive_local(),
+    }
+}
+
+pub fn extract_markup(path: &Path) -> Option<Markup> {
+    match path.extension() {
+        Some(ext) => match ext.to_str().unwrap() {
+            "md" | "markdown" => Some(Markup::Markdown),
+            "html"            => Some(Markup::HTML),
+            "mustache"        => Some(Markup::Mustache),
+            _                 => None,
+        },
+        None => None,
     }
 }

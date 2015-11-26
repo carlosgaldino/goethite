@@ -1,9 +1,9 @@
 use std::fs;
-use walkdir::{ DirEntry, WalkDir };
-use page::{ Page, Markup };
+use walkdir::{ DirEntry, WalkDir, WalkDirIterator };
+use page::Page;
 use std::collections::HashMap;
 use mustache;
-use utils;
+use utils::{ self, Markup };
 
 type Templates = HashMap<String, mustache::Template>;
 
@@ -43,15 +43,16 @@ pub fn build(source: String, destination: String) {
 
     fs::remove_dir_all(destination);
 
-    for entry in walker.filter_map(|e| e.ok()) {
-        if let Some(ext) = entry.path().extension() {
-            // TODO: use `extract_markup`
-            match ext.to_str().unwrap() {
-                "md" | "markdown" => pages.push(build_from_markdown(&entry, &site.config)),
-                "html"            => pages.push(build_from_html(&entry, &site.config)),
-                "mustache"        => add_template(&entry, &mut templates),
-                _                 => utils::copy_file(&entry, &site.config),
-            }
+    for entry in walker.filter_entry(|e| !is_hidden(e)) {
+        let entry = entry.unwrap();
+
+        match utils::extract_markup(entry.path()) {
+            Some(m) => match m {
+                Markup::Markdown => pages.push(build_from_markdown(&entry, &site.config)),
+                Markup::HTML     => pages.push(build_from_html(&entry, &site.config)),
+                Markup::Mustache => add_template(&entry, &mut templates),
+            },
+            None => utils::copy_file(&entry, &site.config),
         }
     }
 
@@ -76,6 +77,7 @@ fn render(page: &Page, site: &Site, templates: &Templates) {
     match page.markup {
         Markup::Markdown => render_markdown(&page, &site, &templates),
         Markup::HTML     => render_html(&page, &site, &templates),
+        _ => {}
     }
 }
 
@@ -111,4 +113,8 @@ fn render_html(page: &Page, site: &Site, templates: &Templates) {
     let mut file = utils::create_output_file(&page.path);
 
     templates.get(&page.attributes.layout).unwrap().render(&mut file, &context);
+}
+
+fn is_hidden(entry: &DirEntry) -> bool {
+    entry.file_name().to_str().map(|s| s.starts_with(".")).unwrap_or(false)
 }

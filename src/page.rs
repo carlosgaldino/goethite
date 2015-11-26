@@ -3,7 +3,7 @@ use rustc_serialize::{ Encodable, Encoder };
 use std::path::{ Path, PathBuf };
 use site::Config;
 use chrono::NaiveDate;
-use utils;
+use utils::{ self, Markup };
 
 #[derive(RustcEncodable, Debug, Clone)]
 pub struct Attributes {
@@ -12,22 +12,6 @@ pub struct Attributes {
     pub layout: String,
     permalink:  String,
     pub date:   NaiveDate,
-}
-
-#[derive(Clone, Debug)]
-pub enum Markup {
-    Markdown,
-    HTML
-}
-
-impl Encodable for Markup {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        match *self {
-            Markup::Markdown => try!(s.emit_str("markdown")),
-            Markup::HTML     => try!(s.emit_str("html")),
-        }
-        Ok(())
-    }
 }
 
 #[derive(Debug, RustcEncodable, Clone)]
@@ -49,28 +33,18 @@ impl Page {
 
         let attributes = build_attrs(attrs, path, config);
         let new_path   = utils::new_path(&attributes.permalink, config);
+        let markup     = utils::extract_markup(path).expect("Unknown markup");
 
         Page {
             content:    content,
             path:       new_path,
             attributes: attributes,
-            markup:     extract_markup(path),
+            markup:     markup,
         }
     }
 
     pub fn is_post(&self) -> bool {
         self.attributes.layout == String::from("post")
-    }
-}
-
-// TODO: move to utils and return Option<Markup>
-fn extract_markup(path: &Path) -> Markup {
-    let ext = path.extension().unwrap().to_str().unwrap();
-
-    match ext {
-        "md" | "markdown" => Markup::Markdown,
-        "html"            => Markup::HTML,
-        _                 => panic!("Unknown markup"),
     }
 }
 
