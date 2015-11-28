@@ -5,7 +5,7 @@ use site::Config;
 use chrono::NaiveDate;
 use utils::{ self, Markup };
 
-#[derive(RustcEncodable, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Attributes {
     title:      String,
     author:     String,
@@ -13,6 +13,39 @@ pub struct Attributes {
     permalink:  String,
     prefix:     Option<String>,
     pub date:   NaiveDate,
+}
+
+impl Encodable for Attributes {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        s.emit_map(1, |e| {
+            let mut i = 0;
+
+            try!(e.emit_map_elt_key(i, |e| "title".encode(e)));
+            try!(e.emit_map_elt_val(i, |e| self.title.encode(e)));
+            i += 1;
+
+            try!(e.emit_map_elt_key(i, |e| "author".encode(e)));
+            try!(e.emit_map_elt_val(i, |e| self.author.encode(e)));
+            i += 1;
+
+            try!(e.emit_map_elt_key(i, |e| "layout".encode(e)));
+            try!(e.emit_map_elt_val(i, |e| self.layout.encode(e)));
+            i += 1;
+
+            try!(e.emit_map_elt_key(i, |e| "permalink".encode(e)));
+            try!(e.emit_map_elt_val(i, |e| self.permalink.encode(e)));
+            i += 1;
+
+            try!(e.emit_map_elt_key(i, |e| "prefix".encode(e)));
+            try!(e.emit_map_elt_val(i, |e| self.prefix.encode(e)));
+            i += 1;
+
+            try!(e.emit_map_elt_key(i, |e| "date".encode(e)));
+            try!(e.emit_map_elt_val(i, |e| self.date.format("%d %b %Y").to_string().encode(e)));
+
+            Ok(())
+        })
+    }
 }
 
 #[derive(Debug, RustcEncodable, Clone)]
