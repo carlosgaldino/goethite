@@ -13,6 +13,7 @@ pub struct Config {
     pub name:        String,
     pub source:      String,
     pub destination: String,
+    tagline:         String,
 }
 
 #[derive(RustcEncodable)]
@@ -35,7 +36,11 @@ impl Site {
 }
 
 pub fn build(source: String, destination: String) {
-    let site = Site::new(Config { author: String::from("Carlos Galdino"), name: String::from("cg"), source: source.clone(), destination: destination.clone() });
+    let site = Site::new(Config { author:      String::from("Carlos Galdino"),
+                                  name:        String::from("cg"),
+                                  source:      source.clone(),
+                                  destination: destination.clone(),
+                                  tagline:     String::from("Musings of Carlos Galdino") });
 
     let walker                   = WalkDir::new(source).into_iter();
     let mut templates: Templates = HashMap::new();
