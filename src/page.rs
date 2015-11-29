@@ -1,7 +1,7 @@
 use toml;
 use rustc_serialize::{ Encodable, Encoder };
 use std::path::{ Path, PathBuf };
-use site::Config;
+use config::Config;
 use chrono::NaiveDate;
 use utils::{ self, Markup };
 

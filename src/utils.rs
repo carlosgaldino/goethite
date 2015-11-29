@@ -3,7 +3,7 @@ use std::path::{ Path, PathBuf };
 use pulldown_cmark::{ html, Parser };
 use std::io::prelude::*;
 use std::fs::{ self, File };
-use site::Config;
+use config::Config;
 use regex::Regex;
 use chrono::{ NaiveDate, UTC };
 use rustc_serialize::{ Encodable, Encoder };
