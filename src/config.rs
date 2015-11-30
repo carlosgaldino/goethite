@@ -15,10 +15,10 @@ pub struct Config {
 
 #[derive(RustcDecodable)]
 struct TomlConfig {
-    pub author:      String,
-    pub name:        String,
-    tagline:         Option<String>,
-    description:     Option<String>,
+    author:      String,
+    name:        String,
+    tagline:     Option<String>,
+    description: Option<String>,
 }
 
 impl Config {
