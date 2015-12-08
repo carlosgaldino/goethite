@@ -7,7 +7,7 @@ use utils::{ self, Markup };
 
 #[derive(Debug, Clone)]
 pub struct Attributes {
-    title:      String,
+    pub title:  String,
     author:     String,
     pub layout: String,
     permalink:  String,

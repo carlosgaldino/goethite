@@ -27,5 +27,11 @@ struct Args {
 fn main() {
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
 
-    site::build(args.flag_source, args.flag_dest);
+    match site::build(args.flag_source, args.flag_dest) {
+        Ok(_)    => println!("Build successful!"),
+        Err(err) => {
+            println!("{}\nBuild failed!", err);
+            std::process::exit(1);
+        },
+    }
 }

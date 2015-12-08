@@ -2,6 +2,7 @@ pub mod site;
 mod page;
 mod utils;
 mod config;
+mod error;
 
 extern crate pulldown_cmark;
 extern crate walkdir;

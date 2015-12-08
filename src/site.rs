@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use mustache;
 use utils::{ self, Markup };
 use config::Config;
+use error::{ Result, GoethiteError };
 
 type Templates = HashMap<String, mustache::Template>;
 
@@ -27,9 +28,9 @@ impl Site {
     }
 }
 
-pub fn build(source: String, destination: String) {
-    let config = Config::new(source.clone(), destination.clone());
-    let site = Site::new(config);
+pub fn build(source: String, destination: String) -> Result<()> {
+    let config = try!(Config::new(source.clone(), destination.clone()));
+    let site   = Site::new(config);
 
     let walker                   = WalkDir::new(source).into_iter();
     let mut templates: Templates = HashMap::new();
@@ -38,15 +39,17 @@ pub fn build(source: String, destination: String) {
     fs::remove_dir_all(destination);
 
     for entry in walker.filter_entry(|e| !is_hidden(e)) {
-        let entry = entry.unwrap();
+        let entry = try!(entry);
 
         match utils::extract_markup(entry.path()) {
             Some(m) => match m {
-                Markup::Markdown => pages.push(build_from_markdown(&entry, &site.config)),
-                Markup::HTML     => pages.push(build_from_html(&entry, &site.config)),
-                Markup::Mustache => add_template(&entry, &mut templates),
+                Markup::Markdown => pages.push(try!(build_from_markdown(&entry, &site.config))),
+                Markup::HTML     => pages.push(try!(build_from_html(&entry, &site.config))),
+                Markup::Mustache => try!(add_template(&entry, &mut templates)),
             },
-            None => utils::copy_file(&entry, &site.config),
+            None => if entry.file_type().is_file() {
+                try!(utils::copy_file(&entry, &site.config));
+            },
         }
     }
 
@@ -56,57 +59,78 @@ pub fn build(source: String, destination: String) {
     let site = Site { pages: pages, posts: posts, .. site };
 
     for page in &site.pages {
-        render(&page, &site, &templates);
+        match render(&page, &site, &templates) {
+            Ok(_)    => {},
+            Err(err) => println!("Page '{}' not rendered because: {}", page.attributes.title, err),
+        }
     }
+
+    Ok(())
 }
 
-fn add_template(entry: &DirEntry, templates: &mut Templates) {
-    let file_name = entry.file_name().to_str().unwrap().replace(".mustache", "").to_string();
-    let template  = mustache::compile_path(entry.path());
+fn add_template(entry: &DirEntry, templates: &mut Templates) -> Result<()> {
+    let file_name = try!(entry.file_name().to_str().ok_or(GoethiteError::Other)).replace(".mustache", "").to_string();
+    let template  = try!(mustache::compile_path(entry.path()));
 
-    templates.insert(file_name, template.unwrap());
+    templates.insert(file_name, template);
+
+    Ok(())
 }
 
-fn render(page: &Page, site: &Site, templates: &Templates) {
+fn render(page: &Page, site: &Site, templates: &Templates) -> Result<()> {
     match page.markup {
         Markup::Markdown => render_markdown(&page, &site, &templates),
         Markup::HTML     => render_html(&page, &site, &templates),
-        _ => {}
+        _ => Ok(())
     }
 }
 
-fn build_from_html(entry: &DirEntry, config: &Config) -> Page {
-    let (attrs, content) = utils::read_content(&entry);
+fn build_from_html(entry: &DirEntry, config: &Config) -> Result<Page> {
+    let content = try!(utils::read_content(&entry));
 
-    Page::new(attrs, content, entry.path(), &config)
+    Ok(Page::new(content.attributes, content.text, entry.path(), &config))
 }
 
-fn build_from_markdown(entry: &DirEntry, config: &Config) -> Page {
-    let (attrs, content) = utils::read_content(&entry);
-    let rendered_content = utils::render_markdown(content);
+fn build_from_markdown(entry: &DirEntry, config: &Config) -> Result<Page> {
+    let content          = try!(utils::read_content(&entry));
+    let rendered_content = utils::render_markdown(content.text);
 
-    Page::new(attrs, rendered_content, entry.path(), &config)
+    Ok(Page::new(content.attributes, rendered_content, entry.path(), &config))
 }
 
-fn render_markdown(page: &Page, site: &Site, templates: &Templates) {
-    let mut file = utils::create_output_file(&page.path);
+fn render_markdown(page: &Page, site: &Site, templates: &Templates) -> Result<()> {
+    let template = match templates.get(&page.attributes.layout) {
+        Some(t) => t,
+        None    => return Err(GoethiteError::MissingLayout(page.attributes.layout.to_owned())),
+    };
+
+    let mut file = try!(utils::create_output_file(&page.path));
     let context  = Context { site: site, page: page };
 
-    templates.get(&page.attributes.layout).unwrap().render(&mut file, &context);
+    try!(template.render(&mut file, &context));
+
+    Ok(())
 }
 
-fn render_html(page: &Page, site: &Site, templates: &Templates) {
+fn render_html(page: &Page, site: &Site, templates: &Templates) -> Result<()> {
+    let template = match templates.get(&page.attributes.layout) {
+        Some(t) => t,
+        None    => return Err(GoethiteError::MissingLayout(page.attributes.layout.to_owned())),
+    };
+
     let page_template         = mustache::compile_str(&page.content);
     let mut rendered: Vec<u8> = Vec::new();
     let context               = Context { site: site, page: page };
 
-    page_template.render(&mut rendered, &context);
+    try!(page_template.render(&mut rendered, &context));
 
     let page     = Page { content: String::from_utf8(rendered).unwrap(), .. page.clone() };
     let context  = Context { page: &page, site: site };
-    let mut file = utils::create_output_file(&page.path);
+    let mut file = try!(utils::create_output_file(&page.path));
 
-    templates.get(&page.attributes.layout).unwrap().render(&mut file, &context);
+    try!(template.render(&mut file, &context));
+
+    Ok(())
 }
 
 fn is_hidden(entry: &DirEntry) -> bool {

@@ -1,7 +1,8 @@
 use std::io::prelude::*;
-use std::fs::File;
 use std::path::Path;
 use toml;
+use error::{ GoethiteError, Result };
+use utils;
 
 #[derive(RustcEncodable)]
 pub struct Config {
@@ -22,26 +23,26 @@ struct TomlConfig {
 }
 
 impl Config {
-    pub fn new(source: String, destination: String) -> Config {
-        let path = Path::new(&source).join("goethite.toml");
-
-        // TODO: handle the case when the config does not exist
-        let mut file = File::open(path).unwrap();
+    pub fn new(source: String, destination: String) -> Result<Config> {
+        let path       = Path::new(&source).join("goethite.toml");
+        let mut file   = try!(utils::open_file(path));
         let mut buffer = String::new();
-        file.read_to_string(&mut buffer);
+        try!(file.read_to_string(&mut buffer));
 
         let config: Option<TomlConfig> = toml::decode_str(&buffer);
 
         let config = match config {
             Some(c) => c,
-            None => panic!("invalid config"),
+            None    => return Err(GoethiteError::InvalidConfig),
         };
 
-        Config { author: config.author,
-                 name: config.name,
-                 tagline: config.tagline,
-                 description: config.description,
-                 source: source,
-                 destination: destination }
+        let c = Config { author:      config.author,
+                         name:        config.name,
+                         tagline:     config.tagline,
+                         description: config.description,
+                         source:      source,
+                         destination: destination };
+
+        Ok(c)
     }
 }

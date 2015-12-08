@@ -1,4 +1,4 @@
-use walkdir::{ DirEntry };
+use walkdir::DirEntry;
 use std::path::{ Path, PathBuf };
 use pulldown_cmark::{ html, Parser };
 use std::io::prelude::*;
@@ -8,6 +8,7 @@ use regex::Regex;
 use chrono::{ NaiveDate, UTC };
 use rustc_serialize::{ Encodable, Encoder };
 use std::ffi::OsStr;
+use error::{ Result, GoethiteError };
 
 #[derive(Clone, Debug)]
 pub enum Markup {
@@ -17,7 +18,7 @@ pub enum Markup {
 }
 
 impl Encodable for Markup {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> ::std::result::Result<(), S::Error> {
         match *self {
             Markup::Markdown => try!(s.emit_str("markdown")),
             Markup::HTML     => try!(s.emit_str("html")),
@@ -27,18 +28,38 @@ impl Encodable for Markup {
     }
 }
 
-pub fn read_content(entry: &DirEntry) -> (String, String) {
-    let mut file   = File::open(entry.path()).unwrap();
+pub fn open_file<P: AsRef<Path>>(path: P) -> Result<File> {
+    let path = path.as_ref();
+
+    let file = match File::open(path) {
+        Ok(f)    => f,
+        Err(err) => match err.kind() {
+            ::std::io::ErrorKind::NotFound => return Err(GoethiteError::NotFound(format!("{:?}", path))),
+            _ => return Err(GoethiteError::from(err)),
+        }
+    };
+
+    Ok(file)
+}
+
+pub struct Content {
+    pub text:       String,
+    pub attributes: String,
+}
+
+pub fn read_content(entry: &DirEntry) -> Result<Content> {
+    let mut file   = try!(open_file(entry.path()));
     let mut buffer = String::new();
-    file.read_to_string(&mut buffer);
+    try!(file.read_to_string(&mut buffer));
 
     let content: Vec<&str> = buffer.split("---").skip_while(|s| s.is_empty()).collect();
 
+    // TODO: front matter should be optional since all attributes are derived
     if content.len() < 2 {
-        panic!("Front Matter not found for {:?}", &entry.path());
+        return Err(GoethiteError::MissingFrontMatter(format!("{:?}", entry.file_name())));
     }
 
-    (content[0].to_string(), content[1].to_string())
+    Ok(Content { attributes: content[0].to_string(), text: content[1].to_string() })
 }
 
 // TODO: remove this and use Path::relative_from when stable
@@ -73,11 +94,12 @@ pub fn new_path<P: AsRef<Path>>(path: &P, prefix: Option<String>, config: &Confi
     new_path
 }
 
-// TODO: Not use `unwrap`
-pub fn create_output_file(path: &PathBuf) -> File {
-    fs::create_dir_all(path.parent().unwrap());
+pub fn create_output_file(path: &PathBuf) -> Result<File> {
+    try!(fs::create_dir_all(path.parent().unwrap()));
 
-    File::create(path.with_extension("html")).unwrap()
+    let file = try!(File::create(path.with_extension("html")));
+
+    Ok(file)
 }
 
 pub fn render_markdown(text: String) -> String {
@@ -87,11 +109,13 @@ pub fn render_markdown(text: String) -> String {
     rendered
 }
 
-pub fn copy_file(entry: &DirEntry, config: &Config) {
+pub fn copy_file(entry: &DirEntry, config: &Config) -> Result<()> {
     let new_path = new_path(&entry.path(), None, &config);
 
-    fs::create_dir_all(new_path.parent().unwrap());
-    fs::copy(entry.path(), new_path);
+    try!(fs::create_dir_all(new_path.parent().unwrap()));
+    try!(fs::copy(entry.path(), new_path));
+
+    Ok(())
 }
 
 pub fn slugify(str: &String) -> String {
