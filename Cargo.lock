@@ -5,7 +5,7 @@ dependencies = [
  "chrono 0.2.17 (git+https://github.com/lifthrasiir/rust-chrono)",
  "docopt 0.6.76 (registry+https://github.com/rust-lang/crates.io-index)",
  "mustache 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "pulldown-cmark 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pulldown-cmark 0.0.3 (git+https://github.com/google/pulldown-cmark)",
  "regex 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -28,6 +28,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "memchr 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "bitflags"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "chrono"
@@ -110,8 +115,9 @@ dependencies = [
 [[package]]
 name = "pulldown-cmark"
 version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/google/pulldown-cmark#e7c391813c8c45ec1d5437e7cbd9134a786b341a"
 dependencies = [
+ "bitflags 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "getopts 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

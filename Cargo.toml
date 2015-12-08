@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Carlos Galdino <carloshsgaldino@gmail.com>"]
 
 [dependencies]
-pulldown-cmark = "0.0.3"
+pulldown-cmark = { git = "https://github.com/google/pulldown-cmark" }
 walkdir = "0.1.5"
 docopt = "0.6.76"
 rustc-serialize = "0.3"

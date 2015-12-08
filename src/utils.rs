@@ -1,6 +1,6 @@
 use walkdir::DirEntry;
 use std::path::{ Path, PathBuf };
-use pulldown_cmark::{ html, Parser };
+use pulldown_cmark::{ html, Parser, self };
 use std::io::prelude::*;
 use std::fs::{ self, File };
 use config::Config;
@@ -104,7 +104,9 @@ pub fn create_output_file(path: &PathBuf) -> Result<File> {
 
 pub fn render_markdown(text: String) -> String {
     let mut rendered = String::new();
-    html::push_html(&mut rendered, Parser::new(&text));
+    let flags        = pulldown_cmark::OPTION_ENABLE_TABLES | pulldown_cmark::OPTION_ENABLE_FOOTNOTES;
+
+    html::push_html(&mut rendered, Parser::new_ext(&text, flags));
 
     rendered
 }
