@@ -4,6 +4,7 @@ use std::error::Error;
 use std::result;
 use walkdir;
 use mustache;
+use chrono;
 
 pub type Result<T> = result::Result<T, GoethiteError>;
 
@@ -16,6 +17,7 @@ pub enum GoethiteError {
     Other,
     Template(mustache::encoder::Error),
     MissingLayout(String),
+    InvalidDate(chrono::format::ParseError),
 }
 
 impl fmt::Display for GoethiteError {
@@ -29,6 +31,7 @@ impl fmt::Display for GoethiteError {
             GoethiteError::Other                        => write!(f, "General error occurred"),
             GoethiteError::Template(ref err)            => write!(f, "Template Error: {:?}", err),
             GoethiteError::MissingLayout(ref layout)    => write!(f, "Layout not found: {}", layout),
+            GoethiteError::InvalidDate(ref err)         => write!(f, "Invalid date: {}", err),
         }
     }
 }
@@ -48,5 +51,11 @@ impl From<walkdir::Error> for GoethiteError {
 impl From<mustache::encoder::Error> for GoethiteError {
     fn from(err: mustache::encoder::Error) -> GoethiteError {
         GoethiteError::Template(err)
+    }
+}
+
+impl From<chrono::format::ParseError> for GoethiteError {
+    fn from(err: chrono::format::ParseError) -> GoethiteError {
+        GoethiteError::InvalidDate(err)
     }
 }

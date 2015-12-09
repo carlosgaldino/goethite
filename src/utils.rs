@@ -128,14 +128,13 @@ pub fn slugify(str: &String) -> String {
     re.replace_all(&slug_title, "").to_lowercase()
 }
 
-pub fn parse_date(str: Option<String>) -> NaiveDate {
-    match str {
-        Some(date) => match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-            Ok(date) => date,
-            Err(_) => panic!("Invalid date format"),
-        },
-        None => UTC::today().naive_local(),
-    }
+pub fn parse_date(str: Option<String>) -> Result<NaiveDate> {
+    let date = match str {
+        Some(date) => try!(NaiveDate::parse_from_str(&date, "%Y-%m-%d")),
+        None       => UTC::today().naive_local(),
+    };
+
+    Ok(date)
 }
 
 pub fn extract_markup(path: &Path) -> Option<Markup> {

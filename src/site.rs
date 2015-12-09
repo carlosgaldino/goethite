@@ -88,14 +88,14 @@ fn render(page: &Page, site: &Site, templates: &Templates) -> Result<()> {
 fn build_from_html(entry: &DirEntry, config: &Config) -> Result<Page> {
     let content = try!(utils::read_content(&entry));
 
-    Ok(Page::new(content.attributes, content.text, entry.path(), &config))
+    Page::new(content.attributes, content.text, entry.path(), &config)
 }
 
 fn build_from_markdown(entry: &DirEntry, config: &Config) -> Result<Page> {
     let content          = try!(utils::read_content(&entry));
     let rendered_content = utils::render_markdown(content.text);
 
-    Ok(Page::new(content.attributes, rendered_content, entry.path(), &config))
+    Page::new(content.attributes, rendered_content, entry.path(), &config)
 }
 
 fn render_markdown(page: &Page, site: &Site, templates: &Templates) -> Result<()> {
