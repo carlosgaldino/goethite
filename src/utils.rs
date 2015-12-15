@@ -44,7 +44,7 @@ pub fn open_file<P: AsRef<Path>>(path: P) -> Result<File> {
 
 pub struct Content {
     pub text:       String,
-    pub attributes: String,
+    pub attributes: Option<String>,
 }
 
 pub fn read_content(entry: &DirEntry) -> Result<Content> {
@@ -54,12 +54,11 @@ pub fn read_content(entry: &DirEntry) -> Result<Content> {
 
     let content: Vec<&str> = buffer.split("---").skip_while(|s| s.is_empty()).collect();
 
-    // TODO: front matter should be optional since all attributes are derived
-    if content.len() < 2 {
-        return Err(GoethiteError::MissingFrontMatter(format!("{:?}", entry.file_name())));
+    if content.len() == 2 {
+        Ok(Content { attributes: Some(content[0].to_string()), text: content[1].to_string() })
+    } else {
+        Ok(Content { attributes: None, text: content[0].to_string() })
     }
-
-    Ok(Content { attributes: content[0].to_string(), text: content[1].to_string() })
 }
 
 // TODO: remove this and use Path::relative_from when stable

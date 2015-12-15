@@ -4,7 +4,7 @@ use std::path::{ Path, PathBuf };
 use config::Config;
 use chrono::NaiveDate;
 use utils::{ self, Markup };
-use error::Result;
+use error::{ Result, GoethiteError };
 
 #[derive(Debug, Clone)]
 pub struct Attributes {
@@ -58,13 +58,19 @@ pub struct Page {
 }
 
 impl Page {
-    pub fn new(attributes: String, content: String, path: &Path, config: &Config) -> Result<Page> {
-        let attrs: Option<TomlAttributes> = toml::decode_str(&attributes);
+    pub fn new(attributes: Option<String>, content: String, path: &Path, config: &Config) -> Result<Page> {
+        let attrs: TomlAttributes;
 
-        let attrs = match attrs {
-            Some(attrs) => attrs,
-            None        => panic!("Invalid front matter for {:?}", &path), // TODO: return Err
-        };
+        if let Some(attributes) = attributes {
+            let toml_attrs: Option<TomlAttributes> = toml::decode_str(&attributes);
+
+            attrs = match toml_attrs {
+                Some(attrs) => attrs,
+                None        => return Err(GoethiteError::InvalidFrontMatter(format!("{:?}", path))),
+            };
+        } else {
+            attrs = TomlAttributes::empty();
+        }
 
         let attributes = try!(build_attrs(attrs, path, config));
         let new_path   = utils::new_path(&attributes.permalink, attributes.prefix.clone(), config);
@@ -118,4 +124,10 @@ struct TomlAttributes {
     author: Option<String>,
     layout: Option<String>,
     date:   Option<String>,
+}
+
+impl TomlAttributes {
+    fn empty() -> TomlAttributes {
+        TomlAttributes { title: None, author: None, layout: None, date: None }
+    }
 }
