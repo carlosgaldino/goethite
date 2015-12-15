@@ -59,19 +59,7 @@ pub struct Page {
 
 impl Page {
     pub fn new(attributes: Option<String>, content: String, path: &Path, config: &Config) -> Result<Page> {
-        let attrs: TomlAttributes;
-
-        if let Some(attributes) = attributes {
-            let toml_attrs: Option<TomlAttributes> = toml::decode_str(&attributes);
-
-            attrs = match toml_attrs {
-                Some(attrs) => attrs,
-                None        => return Err(GoethiteError::InvalidFrontMatter(format!("{:?}", path))),
-            };
-        } else {
-            attrs = TomlAttributes::empty();
-        }
-
+        let attrs      = try!(parse_attributes(attributes, &path));
         let attributes = try!(build_attrs(attrs, path, config));
         let new_path   = utils::new_path(&attributes.permalink, attributes.prefix.clone(), config);
         let markup     = utils::extract_markup(path).expect("Unknown markup");
@@ -116,6 +104,24 @@ fn build_attrs(attrs: TomlAttributes, path: &Path, config: &Config) -> Result<At
     };
 
     Ok(attributes)
+}
+
+fn parse_attributes(attributes: Option<String>, path: &Path) -> Result<TomlAttributes> {
+    let attrs: TomlAttributes;
+
+    match attributes {
+        Some(attributes) => {
+            let toml_attrs: Option<TomlAttributes> = toml::decode_str(&attributes);
+
+            attrs = match toml_attrs {
+                Some(attrs) => attrs,
+                None        => return Err(GoethiteError::InvalidFrontMatter(format!("{:?}", path))),
+            };
+        },
+        None => attrs = TomlAttributes::empty(),
+    }
+
+    Ok(attrs)
 }
 
 #[derive(RustcDecodable, RustcEncodable, Debug)]
