@@ -4,7 +4,7 @@ mod utils;
 mod config;
 mod error;
 
-extern crate pulldown_cmark;
+extern crate hoedown;
 extern crate walkdir;
 extern crate toml;
 extern crate rustc_serialize;
