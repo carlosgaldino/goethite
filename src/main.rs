@@ -5,6 +5,7 @@ extern crate goethite;
 use docopt::Docopt;
 use goethite::site;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 const USAGE: &'static str = "
 goethite.
 
@@ -21,17 +22,17 @@ Options:
 #[derive(Debug, RustcDecodable)]
 struct Args {
     flag_source: String,
-    flag_dest: String
+    flag_dest: String,
 }
 
 fn main() {
     let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
 
     match site::build(args.flag_source, args.flag_dest) {
-        Ok(_)    => println!("Build successful!"),
+        Ok(_) => println!("Build successful!"),
         Err(err) => {
             println!("{}\nBuild failed!", err);
             std::process::exit(1);
-        },
+        }
     }
 }
