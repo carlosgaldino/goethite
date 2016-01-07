@@ -27,6 +27,7 @@ impl Encodable for Markup {
     }
 }
 
+// TODO: read the file's content and return it.
 pub fn open_file<P: AsRef<Path>>(path: P) -> Result<File> {
     let path = path.as_ref();
 
@@ -50,6 +51,7 @@ pub struct Content {
     pub attributes: Option<String>,
 }
 
+// TODO: receive just the entry path.
 pub fn read_content(entry: &DirEntry) -> Result<Content> {
     let mut file = try!(open_file(entry.path()));
     let mut buffer = String::new();
