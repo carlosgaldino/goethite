@@ -111,7 +111,7 @@ fn build_from_html(entry: &DirEntry, config: &Config) -> Result<Page> {
 
 fn build_from_markdown(entry: &DirEntry, config: &Config) -> Result<Page> {
     let content = try!(utils::read_content(&entry));
-    let rendered_content = utils::render_markdown(content.text);
+    let rendered_content = try!(utils::render_markdown(content.text));
 
     Page::new(content.attributes, rendered_content, entry.path(), &config)
 }

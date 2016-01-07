@@ -1,3 +1,4 @@
+use std::str;
 use std::fmt;
 use std::io;
 use std::error::Error;
@@ -18,6 +19,7 @@ pub enum GoethiteError {
     Template(mustache::encoder::Error),
     MissingLayout(String),
     InvalidDate(chrono::format::ParseError),
+    InvalidMarkdown(str::Utf8Error),
 }
 
 impl fmt::Display for GoethiteError {
@@ -34,6 +36,7 @@ impl fmt::Display for GoethiteError {
             GoethiteError::Template(ref err) => write!(f, "Template Error: {:?}", err),
             GoethiteError::MissingLayout(ref layout) => write!(f, "Layout not found: {}", layout),
             GoethiteError::InvalidDate(ref err) => write!(f, "Invalid date: {}", err),
+            GoethiteError::InvalidMarkdown(ref err) => write!(f, "Invalid markdown: {}", err),
         }
     }
 }

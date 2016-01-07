@@ -110,7 +110,7 @@ pub fn create_output_file(path: &PathBuf) -> Result<File> {
     Ok(file)
 }
 
-pub fn render_markdown(text: String) -> String {
+pub fn render_markdown(text: String) -> Result<String> {
     use hoedown::*;
 
     let exts = FOOTNOTES | FENCED_CODE | TABLES | AUTOLINK | STRIKETHROUGH | SUPERSCRIPT |
@@ -118,8 +118,10 @@ pub fn render_markdown(text: String) -> String {
     let markdown = Markdown::from(text.as_bytes()).extensions(exts);
     let mut html = Html::new(renderer::html::Flags::empty(), 0);
 
-    // TODO: remove `unwrap`
-    html.render(&markdown).to_str().unwrap().to_string()
+    match html.render(&markdown).to_str() {
+        Ok(text) => Ok(text.to_string()),
+        Err(e) => Err(GoethiteError::InvalidMarkdown(e)),
+    }
 }
 
 pub fn copy_file(entry: &DirEntry, config: &Config) -> Result<()> {
