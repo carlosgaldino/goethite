@@ -1,4 +1,3 @@
-use std::io::prelude::*;
 use std::path::Path;
 use toml;
 use error::{GoethiteError, Result};
@@ -25,9 +24,7 @@ struct TomlConfig {
 impl Config {
     pub fn new(source: String, destination: String) -> Result<Config> {
         let path = Path::new(&source).join("goethite.toml");
-        let mut file = try!(utils::open_file(path));
-        let mut buffer = String::new();
-        try!(file.read_to_string(&mut buffer));
+        let buffer = try!(utils::read_file(path));
 
         let config: Option<TomlConfig> = toml::decode_str(&buffer);
 

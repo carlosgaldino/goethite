@@ -27,11 +27,10 @@ impl Encodable for Markup {
     }
 }
 
-// TODO: read the file's content and return it.
-pub fn open_file<P: AsRef<Path>>(path: P) -> Result<File> {
+pub fn read_file<P: AsRef<Path>>(path: P) -> Result<String> {
     let path = path.as_ref();
 
-    let file = match File::open(path) {
+    let mut file = match File::open(path) {
         Ok(f) => f,
         Err(err) => {
             match err.kind() {
@@ -43,7 +42,10 @@ pub fn open_file<P: AsRef<Path>>(path: P) -> Result<File> {
         }
     };
 
-    Ok(file)
+    let mut buffer = String::new();
+    try!(file.read_to_string(&mut buffer));
+
+    Ok(buffer)
 }
 
 pub struct Content {
@@ -52,9 +54,7 @@ pub struct Content {
 }
 
 pub fn read_content(path: &Path) -> Result<Content> {
-    let mut file = try!(open_file(path));
-    let mut buffer = String::new();
-    try!(file.read_to_string(&mut buffer));
+    let buffer = try!(read_file(path));
 
     let content: Vec<&str> = buffer.split("---").skip_while(|s| s.is_empty()).collect();
 
