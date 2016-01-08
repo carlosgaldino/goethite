@@ -51,9 +51,8 @@ pub struct Content {
     pub attributes: Option<String>,
 }
 
-// TODO: receive just the entry path.
-pub fn read_content(entry: &DirEntry) -> Result<Content> {
-    let mut file = try!(open_file(entry.path()));
+pub fn read_content(path: &Path) -> Result<Content> {
+    let mut file = try!(open_file(path));
     let mut buffer = String::new();
     try!(file.read_to_string(&mut buffer));
 
