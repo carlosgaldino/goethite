@@ -33,12 +33,14 @@ impl Config {
             None => return Err(GoethiteError::InvalidConfig),
         };
 
-        let c = Config { author: config.author,
-                         name: config.name,
-                         tagline: config.tagline,
-                         description: config.description,
-                         source: source,
-                         destination: destination, };
+        let c = Config {
+            author: config.author,
+            name: config.name,
+            tagline: config.tagline,
+            description: config.description,
+            source: source,
+            destination: destination,
+        };
 
         Ok(c)
     }

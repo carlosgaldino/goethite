@@ -111,11 +111,11 @@ pub fn create_output_file(path: &PathBuf) -> Result<File> {
     Ok(file)
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub fn render_markdown(text: String) -> Result<String> {
     use hoedown::*;
 
-    let exts = FOOTNOTES | FENCED_CODE | TABLES | AUTOLINK | STRIKETHROUGH | SUPERSCRIPT |
-               NO_INTRA_EMPHASIS;
+    let exts = FOOTNOTES | FENCED_CODE | TABLES | AUTOLINK | STRIKETHROUGH | SUPERSCRIPT | NO_INTRA_EMPHASIS;
     let markdown = Markdown::from(text.as_bytes()).extensions(exts);
     let mut html = Html::new(renderer::html::Flags::empty(), 0);
 

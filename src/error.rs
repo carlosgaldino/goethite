@@ -22,21 +22,20 @@ pub enum GoethiteError {
     InvalidMarkdown(str::Utf8Error),
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl fmt::Display for GoethiteError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            GoethiteError::Io(ref err) => write!(f, "IO Error: {}", err),
-            GoethiteError::NotFound(ref file) => write!(f, "File Not Found: {}", file),
-            GoethiteError::InvalidConfig => write!(f, "Invalid config file"),
-            GoethiteError::Traverse => write!(f, "Error while traversing source directory"),
-            GoethiteError::InvalidFrontMatter(ref file) => {
-                write!(f, "Invalid front matter for: {}", file)
-            }
-            GoethiteError::Other => write!(f, "General error occurred"),
-            GoethiteError::Template(ref err) => write!(f, "Template Error: {:?}", err),
-            GoethiteError::MissingLayout(ref layout) => write!(f, "Layout not found: {}", layout),
-            GoethiteError::InvalidDate(ref err) => write!(f, "Invalid date: {}", err),
-            GoethiteError::InvalidMarkdown(ref err) => write!(f, "Invalid markdown: {}", err),
+            GoethiteError::Io(ref err)                  => write!(f, "IO Error: {}", err),
+            GoethiteError::NotFound(ref file)           => write!(f, "File Not Found: {}", file),
+            GoethiteError::InvalidConfig                => write!(f, "Invalid config file"),
+            GoethiteError::Traverse                     => write!(f, "Error while traversing source directory"),
+            GoethiteError::InvalidFrontMatter(ref file) => write!(f, "Invalid front matter for: {}", file),
+            GoethiteError::Other                        => write!(f, "General error occurred"),
+            GoethiteError::Template(ref err)            => write!(f, "Template Error: {:?}", err),
+            GoethiteError::MissingLayout(ref layout)    => write!(f, "Layout not found: {}", layout),
+            GoethiteError::InvalidDate(ref err)         => write!(f, "Invalid date: {}", err),
+            GoethiteError::InvalidMarkdown(ref err)     => write!(f, "Invalid markdown: {}", err),
         }
     }
 }
